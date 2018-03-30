@@ -25,7 +25,7 @@ llpoisson.grad <- function(lambda, n, y){
   return(out)
 }
 
-# Function that searches for Maximum Likelihood: Iterative Method
+######## Function that searches for Maximum Likelihood: Binom
 MaxBinom <- function(theta, alpha, delta = 10^-6, n, y){
   if (20*alpha > theta) {
     stop("You must enter a bigger value for the learning rate or a smaller theta")
@@ -81,8 +81,8 @@ MaxBinom <- function(theta, alpha, delta = 10^-6, n, y){
   return(iterhistBinom)
 }
 
-# Function that searches for Maximum Likelihood: Iterative Method: POISSON
-MaxPois <- function(lambda, alpha, delta = 10^-6, start = 1, n, y){
+###### Function that searches for Maximum Likelihood: Iterative Method: POISSON
+MaxPois <- function(lambda, alpha, delta = 10^-6, n, y){
   if (20*alpha > lambda) {
     stop("You must enter a bigger value for the learning rate or a smaller lambda")
   }
@@ -176,18 +176,22 @@ ui <- fluidPage(
   sidebarLayout(
     sidebarPanel(
       distribution,
+      
+      # Conditional Panel for Binomial Distribution
       conditionalPanel(
         condition = ("input.dist == 'Binomial'"),
+        withMathJax(helpText("$x$ ~ $B(n, \\theta)$")),
         thetaVal,
         y,
         n,
         learningRate,
         convergence
-        #uiOutput("iterSlider")
-        #changeIter
         ),
+      
+      # Conditional Panel for Poisson Distribution
       conditionalPanel(
         condition = ("input.dist == 'Poisson'"),
+        withMathJax(helpText("$x$ ~ $Po(\\lambda)$")),
         lambdaVal,
         observationVal,
         timeVal,
@@ -211,8 +215,8 @@ server <- function(input, output, session){
     
   # Plots
     output$plot <- renderPlotly({
-
-      if (input$dist == "Binomial"){ ## BINOMIAL PLOT
+      # Binomial Plot
+      if (input$dist == "Binomial"){
         thetas <- seq(.01, .99, by=.001)
         llik <- llbinom.grad(thetas, n = input$n, y = input$y)$l
         d <- data.frame(thetas = thetas, llik = llik)
@@ -224,31 +228,29 @@ server <- function(input, output, session){
         newdf <- data.frame(cbind(df[s, 2],df[s, 3], df[s, 4]))
         colnames(newdf)[1] <- "theta"
         colnames(newdf)[2] <- "Loglikelihood"
-	colnames(newdf)[3] <- "FirstDeriv"
+        colnames(newdf)[3] <- "FirstDeriv"
         
+        # Add points that were selected in rows in the shinyApp
         if (length(s)){
         
-          ggplot(d, aes(x = thetas, y = llik)) + 
-            geom_line() + 
+          ggplot(d, aes(x = thetas, y = llik)) + geom_line() + 
             geom_point(aes(x = input$theta,
-              y = llbinom.grad(input$theta, n = input$n, y = input$y)$l),
-              colour = "blue") +
-            geom_point(data = newdf, 
-	      mapping = aes(x = theta, y = Loglikelihood, colour = "red")) + 
-	    geom_segment(data = newdf,
-	      mapping = aes(x = theta - .1, xend = theta + .1,
-	         	    y = Loglikelihood - .1*FirstDeriv, yend = Loglikelihood + .1*FirstDeriv,
-			    colour = "red"))
-        
+                           y = llbinom.grad(input$theta, n = input$n, y = input$y)$l),
+                       colour = "blue") +
+            geom_point(data = newdf, mapping = aes(x = theta, y = Loglikelihood, colour = "red")) + 
+            geom_segment(data = newdf,
+                         mapping = aes(x = theta - .1, xend = theta + .1, y = Loglikelihood - .1*FirstDeriv,
+                                       yend = Loglikelihood + .1*FirstDeriv, colour = "red"))
         } else {
-        
           ggplot(d, aes(x = thetas, y = llik)) + 
             geom_line() + geom_point(aes(x = input$theta,
                                        y = llbinom.grad(input$theta, n = input$n, y = input$y)$l),
                                        colour = "blue")
-	}
-      } else if (input$dist == "Poisson"){ ## POISSON PLOT
-	lambdas <- seq(.01, .99, by=.001)
+        }
+        
+      # Poisson Plot
+      } else if(input$dist == "Poisson"){
+        lambdas <- seq(.01, .99, by=.001)
         llik <- llpoisson.grad(lambdas, n = input$timeP, y = input$observationP)$l
         d <- data.frame(lambdas = lambdas, llik = llik)
         
@@ -259,44 +261,51 @@ server <- function(input, output, session){
         newdf <- data.frame(cbind(df[s, 2],df[s, 3], df[s, 4]))
         colnames(newdf)[1] <- "lambda"
         colnames(newdf)[2] <- "Loglikelihood"
-	colnames(newdf)[3] <- "FirstDeriv"
+        colnames(newdf)[3] <- "FirstDeriv"
         
+        # Add points that were selected in rows in the shinyApp
         if (length(s)){
-        
           ggplot(d, aes(x = lambdas, y = llik)) + 
             geom_line() + 
             geom_point(aes(x = input$lambda,
               y = llpoisson.grad(input$lambda, n = input$timeP, y = input$observationP)$l),
               colour = "blue") +
             geom_point(data = newdf,
-	      mapping = aes(x = lambda, y = Loglikelihood, colour = "red")) + 
-	    geom_segment(data = newdf,
-	      mapping = aes(x = lambda - .1, xend = lambda + .1,
-	         	    y = Loglikelihood - .1*FirstDeriv, yend = Loglikelihood + .1*FirstDeriv,
-			    colour = "red"))	     
+                       mapping = aes(x = lambda, y = Loglikelihood, colour = "red")) + 
+            geom_segment(data = newdf, 
+                         mapping = aes(x = lambda - .1, xend = lambda + .1, 
+                                       y = Loglikelihood - .1*FirstDeriv, yend = Loglikelihood + .1*FirstDeriv,
+                                       colour = "red"))	     
         } else {
         
           ggplot(d, aes(x = lambdas, y = llik)) + 
             geom_line() + geom_point(aes(x = input$lambda,
                                        y = llpoisson.grad(input$lambda, n = input$timeP, y = input$observationP)$l),
                                        colour = "blue")
-	}
+          }
       }
+      
     })
       
     # Table of iterations
     output$iterhist <- DT::renderDataTable({
-      if (input$dist == "Binomial"){ # if binomial selected
+      # Binomial Table
+      if (input$dist == "Binomial"){ 
       MaxBinom(theta = input$theta, alpha = input$learning, 
                delta = input$conv, n = input$n, y = input$y)
-      } else if (input$dist == "Poisson"){ # or poisson
-        MaxPois(lambda = input$lambda, alpha = input$learningP,
-	  delta = input$convP, n = input$timeP, y = input$observationP)
+        
+      # Poisson  Table
+      } else if(input$dist == "Poisson"){ # or poisson
+        MaxPois(lambda = input$lambda, alpha = input$learningP, 
+                delta = input$convP, n = input$timeP, y = input$observationP)
       }
+      
     })
     
+    # This Panel appears if rows were selected in the table
     output$selected <- renderPrint({
       s <- input$iterhist_rows_selected
+      
       if(length(s)){
         cat('These iterations were selected:\n\n')
         cat(s, sep = ', ')      }
