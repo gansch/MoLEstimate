@@ -82,21 +82,21 @@ MaxBinom <- function(theta, alpha, delta = 10^-6, n, y){
 }
 
 # Function that searches for Maximum Likelihood: Iterative Method: POISSON
-MaxPois <- function(theta, alpha, delta = 10^-6, start = 1, n, y){
-  if (20*alpha > theta) {
+MaxPois <- function(lambda, alpha, delta = 10^-6, start = 1, n, y){
+  if (20*alpha > lambda) {
     stop("You must enter a bigger value for the learning rate or a smaller lambda")
   }
   # define empty vectors
-  thetaVec <- NULL
+  lambdaVec <- NULL
   LL <- NULL
   LLp <- NULL
   LLpp <- NULL
   
-  # assign theta
-  thetaVec[1] <- theta
+  # assign lambda
+  lambdaVec[1] <- lambda
   
   # calculate likelihoods
-  out <- llpoisson.grad(lambda = thetaVec[1], n = n, y = y)
+  out <- llpoisson.grad(lambda = lambdaVec[1], n = n, y = y)
   
   # enter result of the list into the vectors
   LL[1] <- out$l
@@ -110,17 +110,17 @@ MaxPois <- function(theta, alpha, delta = 10^-6, start = 1, n, y){
   # as long as convergence is false, keep running the loop
   while(!convergence){
     
-    thetaVec[start + 1] <- thetaVec[start] + alpha*out$lp
+    lambdaVec[start + 1] <- lambdaVec[start] + alpha*out$lp
     
-    out <- llpoisson.grad(thetaVec[start + 1], n = n, y = y)
+    out <- llpoisson.grad(lambdaVec[start + 1], n = n, y = y)
     
     LL[start + 1] <- out$l
     LLp[start + 1] <- out$lp
     LLpp[start + 1] <- out$lpp
     
-    # Stop the while loop as soon as the absolute value between theta and 
-    # previous theta is below convergence level
-    if ((abs(thetaVec[start + 1] - thetaVec[start])) < delta){
+    # Stop the while loop as soon as the absolute value between lambda and 
+    # previous lambda is below convergence level
+    if ((abs(lambdaVec[start + 1] - lambdaVec[start])) < delta){
       convergence = TRUE
     }
     
@@ -130,7 +130,7 @@ MaxPois <- function(theta, alpha, delta = 10^-6, start = 1, n, y){
   }
   
   # make dataframe of the iteration history
-  iterhistPoisson <- data.frame(Iterations = seq(from = 1, to = start), theta = thetaVec,
+  iterhistPoisson <- data.frame(Iterations = seq(from = 1, to = start), lambda = lambdaVec,
                                 LogLikelihood = LL, FirstDerivative = LLp, SecondDerivative = LLpp)
   
   return(iterhistPoisson)
@@ -237,11 +237,11 @@ server <- function(input, output, session){
                                        colour = "blue")
 	}
       } else if (input$dist == "Poisson"){ ## POISSON PLOT
-	thetas <- seq(.01, .99, by=.001)
-        llik <- llpoisson.grad(thetas, n = input$n, y = input$y)$l
-        d <- data.frame(thetas = thetas, llik = llik)
+	lambdas <- seq(.01, .99, by=.001)
+        llik <- llpoisson.grad(lambdas, n = input$n, y = input$y)$l
+        d <- data.frame(lambdas = lambdas, llik = llik)
         
-        df <- MaxPois(theta = input$lambda, alpha = input$learning, 
+        df <- MaxPois(lambda = input$lambda, alpha = input$learning, 
                       delta = input$conv, n = input$n, y = input$y)
         s <- input$iterhist_rows_selected
         
@@ -252,20 +252,20 @@ server <- function(input, output, session){
         
         if (length(s)){
         
-          ggplot(d, aes(x = thetas, y = llik)) + 
+          ggplot(d, aes(x = lambdas, y = llik)) + 
             geom_line() + 
             geom_point(aes(x = input$lambda,
               y = llpoisson.grad(input$lambda, n = input$n, y = input$y)$l),
               colour = "blue") +
             geom_point(data = newdf,
-	      mapping = aes(x = theta, y = Loglikelihood, colour = "red")) + 
+	      mapping = aes(x = lambda, y = Loglikelihood, colour = "red")) + 
 	    geom_segment(data = newdf,
-	      mapping = aes(x = theta - .1, xend = theta + .1,
+	      mapping = aes(x = lambda - .1, xend = lambda + .1,
 	         	    y = Loglikelihood - .1*FirstDeriv, yend = Loglikelihood + .1*FirstDeriv,
 			    colour = "red"))	     
         } else {
         
-          ggplot(d, aes(x = thetas, y = llik)) + 
+          ggplot(d, aes(x = lambdas, y = llik)) + 
             geom_line() + geom_point(aes(x = input$lambda,
                                        y = llpoisson.grad(input$lambda, n = input$n, y = input$y)$l),
                                        colour = "blue")
@@ -279,7 +279,7 @@ server <- function(input, output, session){
       MaxBinom(theta = input$theta, alpha = input$learning, 
                delta = input$conv, n = input$n, y = input$y)
       } else if (input$dist == "Poisson"){ # or poisson
-        MaxPois(theta = input$lambda, alpha = input$learning,
+        MaxPois(lambda = input$lambda, alpha = input$learning,
 	  delta = input$conv, n = input$n, y = input$y)
       }
     })
