@@ -16,6 +16,15 @@ llbinom.grad <- function(theta, n, y){
   return(out)
 }
 
+# Function for Likelihood.. of Poisson distribution
+llpoisson.grad <- function(theta, n, y){
+  pell <- -n*(theta) + sum(y)*log(theta) # loglikelihood
+  pellp <- -n + sum(y)/theta # 1st derivative of llh
+  pellpp <- -1*(sum(y)/theta^2) # 2nd derivative of llh
+  out<-list(l=pell,lp=pellp, lpp=pellpp)
+  return(out)
+}
+
 # Function that searches for Maximum Likelihood: Iterative Method
 MaxBinom <- function(theta, alpha, delta = 10^-6, n, y){
   if (20*alpha > theta) {
@@ -72,6 +81,60 @@ MaxBinom <- function(theta, alpha, delta = 10^-6, n, y){
   return(iterhistBinom)
 }
 
+# Function that searches for Maximum Likelihood: Iterative Method: POISSON
+MaxPois <- function(theta, alpha, delta = 10^-6, start = 1, n, y){
+  if (20*alpha > theta) {
+    stop("You must enter a bigger value for the learning rate or a smaller theta")
+  }
+  # define empty vectors
+  thetaVec <- NULL
+  LL <- NULL
+  LLp <- NULL
+  LLpp <- NULL
+  
+  # assign theta
+  thetaVec[1] <- theta
+  
+  # calculate likelihoods
+  out <- llpoisson.grad(theta = thetaVec[1], n = n, y = y)
+  
+  # enter result of the list into the vectors
+  LL[1] <- out$l
+  LLp[1] <- out$lp
+  LLpp[1] <- out$lpp
+  
+  convergence = FALSE # convergence is set to false in order to run while loop
+  
+  start <- 1 # starting value
+  
+  # as long as convergence is false, keep running the loop
+  while(!convergence){
+    
+    thetaVec[start + 1] <- thetaVec[start] + alpha*out$lp
+    
+    out <- llpoisson.grad(thetaVec[start + 1], n = n, y = y)
+    
+    LL[start + 1] <- out$l
+    LLp[start + 1] <- out$lp
+    LLpp[start + 1] <- out$lpp
+    
+    # Stop the while loop as soon as the absolute value between theta and 
+    # previous theta is below convergence level
+    if ((abs(thetaVec[start + 1] - thetaVec[start])) < delta){
+      convergence = TRUE
+    }
+    
+    # increase starting value
+    start <- start + 1
+    
+  }
+  
+  # make dataframe of the iteration history
+  iterhistPoisson <- data.frame(Iterations = seq(from = 1, to = start), theta = thetaVec,
+                                LogLikelihood = LL, FirstDerivative = LLp, SecondDerivative = LLpp)
+  
+  return(iterhistPoisson)
+}
 
 ################################### Choices and Buttons ##########################
 
@@ -111,7 +174,7 @@ ui <- fluidPage(
     mainPanel(
       plotlyOutput(outputId = "plot"),
       verbatimTextOutput(outputId = "selected"),
-      DTOutput(outputId = "iterhistBinom")
+      DTOutput(outputId = "iterhist")
     )
   
   )
@@ -130,7 +193,7 @@ server <- function(input, output, session){
       
       df <- MaxBinom(theta = input$theta, alpha = input$learning, 
                      delta = input$conv, n = input$n, y = input$y)
-      s <- input$iterhistBinom_rows_selected
+      s <- input$iterhist_rows_selected
       
       newdf <- data.frame(cbind(df[s, 2],df[s, 3]))
       colnames(newdf)[1] <- "theta"
@@ -161,13 +224,18 @@ server <- function(input, output, session){
     })
       
     # Table of iterations
-    output$iterhistBinom <- DT::renderDataTable(
+    output$iterhist <- DT::renderDataTable({
+      if (input$dist == "Binomial"){ # if binomial selected
       MaxBinom(theta = input$theta, alpha = input$learning, 
                delta = input$conv, n = input$n, y = input$y)
-    )
+      } else if (input$dist == "Poisson"){ # or poisson
+        MaxPois(theta = input$theta, alpha = input$learning,
+	  delta = input$conv, n = input$n, y = input$y)
+      }
+    })
     
     output$selected <- renderPrint({
-      s <- input$iterhistBinom_rows_selected
+      s <- input$iterhist_rows_selected
       if(length(s)){
         cat('These iterations were selected:\n\n')
         cat(s, sep = ', ')      }
@@ -179,8 +247,5 @@ server <- function(input, output, session){
 
 shinyApp(ui, server)
 
-
-
-  
 
 
