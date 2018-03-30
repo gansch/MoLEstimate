@@ -187,40 +187,65 @@ server <- function(input, output, session){
   # Plots
     output$plot <- renderPlotly({
 
-      thetas <- seq(.01, .99, by=.001)
-      llik <- llbinom.grad(thetas, n = input$n, y = input$y)$l
-      d <- data.frame(thetas = thetas, llik = llik)
-      
-      df <- MaxBinom(theta = input$theta, alpha = input$learning, 
-                     delta = input$conv, n = input$n, y = input$y)
-      s <- input$iterhist_rows_selected
-      
-      newdf <- data.frame(cbind(df[s, 2],df[s, 3]))
-      colnames(newdf)[1] <- "theta"
-      colnames(newdf)[2] <- "Loglikelihood"
-      
-      if (length(s)){
+      if (input$dist == "Binomial"){ ## BINOMIAL PLOT
+        thetas <- seq(.01, .99, by=.001)
+        llik <- llbinom.grad(thetas, n = input$n, y = input$y)$l
+        d <- data.frame(thetas = thetas, llik = llik)
         
-        ggplot(d, aes(x = thetas, y = llik)) + 
-          geom_line() + 
-          geom_point(aes(x = input$theta,
-                         y = llbinom.grad(input$theta, n = input$n, y = input$y)$l),
-                     colour = "blue") +
-          geom_point(data = newdf, mapping = aes(x = theta, y = Loglikelihood, colour = "red"))
+        df <- MaxBinom(theta = input$theta, alpha = input$learning, 
+                       delta = input$conv, n = input$n, y = input$y)
+        s <- input$iterhist_rows_selected
         
-      } else {
+        newdf <- data.frame(cbind(df[s, 2],df[s, 3]))
+        colnames(newdf)[1] <- "theta"
+        colnames(newdf)[2] <- "Loglikelihood"
         
-        ggplot(d, aes(x = thetas, y = llik)) + 
-          geom_line() + geom_point(aes(x = input$theta,
+        if (length(s)){
+        
+          ggplot(d, aes(x = thetas, y = llik)) + 
+            geom_line() + 
+            geom_point(aes(x = input$theta,
+              y = llbinom.grad(input$theta, n = input$n, y = input$y)$l),
+              colour = "blue") +
+            geom_point(data = newdf, mapping = aes(x = theta, y = Loglikelihood, colour = "red"))
+        
+        } else {
+        
+          ggplot(d, aes(x = thetas, y = llik)) + 
+            geom_line() + geom_point(aes(x = input$theta,
                                        y = llbinom.grad(input$theta, n = input$n, y = input$y)$l),
-                                   colour = "blue")
+                                       colour = "blue")
+	}
+      } else if (input$dist == "Poisson"){ ## POISSON PLOT
+	thetas <- seq(.01, .99, by=.001)
+        llik <- llpoisson.grad(thetas, n = input$n, y = input$y)$l
+        d <- data.frame(thetas = thetas, llik = llik)
+        
+        df <- MaxPois(theta = input$theta, alpha = input$learning, 
+                      delta = input$conv, n = input$n, y = input$y)
+        s <- input$iterhist_rows_selected
+        
+        newdf <- data.frame(cbind(df[s, 2],df[s, 3]))
+        colnames(newdf)[1] <- "theta"
+        colnames(newdf)[2] <- "Loglikelihood"
+        
+        if (length(s)){
+        
+          ggplot(d, aes(x = thetas, y = llik)) + 
+            geom_line() + 
+            geom_point(aes(x = input$theta,
+              y = llpoisson.grad(input$theta, n = input$n, y = input$y)$l),
+              colour = "blue") +
+            geom_point(data = newdf, mapping = aes(x = theta, y = Loglikelihood, colour = "red"))
+        
+        } else {
+        
+          ggplot(d, aes(x = thetas, y = llik)) + 
+            geom_line() + geom_point(aes(x = input$theta,
+                                       y = llpoisson.grad(input$theta, n = input$n, y = input$y)$l),
+                                       colour = "blue")
+	}
       }
-      #qplot(x = thetas, y = llbinom.grad(thetas, n = input$n, y = input$y)$l, geom = 'line',
-      #      xlab = expression(theta), ylab = "log Likelihood") + 
-        #scale_x_continuous(limits = c(0, .99)) + 
-        #geom_point(aes(x = input$theta, y = llbinom.grad(input$theta, n = input$n, y = input$y)$l),
-        #           colour = "red")
-
     })
       
     # Table of iterations
