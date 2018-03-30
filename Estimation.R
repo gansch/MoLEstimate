@@ -142,7 +142,7 @@ MaxPois <- function(lambda, alpha, delta = 10^-6, n, y){
 
 distribution <- selectInput(inputId = "dist", label = "Choose your distribution",
                             choices = c("Binomial", "Poisson"), selected = "Binomial")
-thetaVal <- numericInput(inputId = "theta", label = "Choose your theta value", min = 0,
+thetaVal <- numericInput(inputId = "theta", label = "Choose your theta $\\theta$", min = 0,
                          max = 0.99, step = 0.01, value = 0.5)
 n <- numericInput(inputId = "n", label = "Choose the number of Misses", min = 1,
                   max = 20, step = 1, value = 3)
@@ -152,16 +152,14 @@ learningRate <- numericInput(inputId = "learning", label = "Choose your learning
                              min = 0.005, max = 0.05, step = 0.001, value = 0.005)
 convergence <- numericInput(inputId = "conv", label = "Set the Convergence Level", value = 10^-16, min = 10^-20, 
                             max = 10^-5, step= 10^-20)
-#changeIter <- actionButton(inputId = "change", label ="Change iteration max value")
-
 
 ########## Poisson
 
-lambdaVal <- numericInput(inputId = "lambda", label = "Choose your lambda value", min = 0,
+lambdaVal <- numericInput(inputId = "lambda", label = "Choose your lambda $\\lambda$", min = 0,
                          max = 0.99, step = 0.01, value = 0.5)
-observationVal <-numericInput(inputId = "observationP", label = "Choose the sum of observations", min = 1,
+observationVal <-numericInput(inputId = "observationP", label = "Choose the sum of observations $k$", min = 1,
                  max = 20, step = 1, value = 1)
-timeVal <- numericInput(inputId = "timeP", label = "Choose time interval", min = 1,
+timeVal <- numericInput(inputId = "timeP", label = "Choose number of time interval", min = 1,
                   max = 20, step = 1, value = 3)
 convergencePois <- numericInput(inputId = "convP", label = "Set the Convergence Level", value = 10^-16, min = 10^-20, 
                             max = 10^-5, step= 10^-20)
@@ -180,8 +178,8 @@ ui <- fluidPage(
       # Conditional Panel for Binomial Distribution
       conditionalPanel(
         condition = ("input.dist == 'Binomial'"),
-        withMathJax(helpText("$x$ ~ $B(n, \\theta)$")),
-        thetaVal,
+        helpText("$x$ ~ $B(n, \\theta)$"),
+        withMathJax(thetaVal),
         y,
         n,
         learningRate,
@@ -191,8 +189,8 @@ ui <- fluidPage(
       # Conditional Panel for Poisson Distribution
       conditionalPanel(
         condition = ("input.dist == 'Poisson'"),
-        withMathJax(helpText("$x$ ~ $Po(\\lambda)$")),
-        lambdaVal,
+        helpText("$x$ ~ $Po(\\lambda)$"),
+        withMathJax(lambdaVal),
         observationVal,
         timeVal,
         learningRatePois,
@@ -233,7 +231,7 @@ server <- function(input, output, session){
         # Add points that were selected in rows in the shinyApp
         if (length(s)){
         
-          ggplot(d, aes(x = thetas, y = llik)) + geom_line() + 
+          ggplot(d, aes(x = thetas, y = llik)) + geom_line() + xlab("theta") + ylab("Log Likelihood") +
             geom_point(aes(x = input$theta,
                            y = llbinom.grad(input$theta, n = input$n, y = input$y)$l),
                        colour = "blue") +
@@ -245,7 +243,7 @@ server <- function(input, output, session){
           ggplot(d, aes(x = thetas, y = llik)) + 
             geom_line() + geom_point(aes(x = input$theta,
                                        y = llbinom.grad(input$theta, n = input$n, y = input$y)$l),
-                                       colour = "blue")
+                                       colour = "blue") + xlab("theta") + ylab("Log Likelihood")
         }
         
       # Poisson Plot
@@ -265,7 +263,7 @@ server <- function(input, output, session){
         
         # Add points that were selected in rows in the shinyApp
         if (length(s)){
-          ggplot(d, aes(x = lambdas, y = llik)) + 
+          ggplot(d, aes(x = lambdas, y = llik)) + xlab("lambda") + ylab("Log Likelihood") +
             geom_line() + 
             geom_point(aes(x = input$lambda,
               y = llpoisson.grad(input$lambda, n = input$timeP, y = input$observationP)$l),
@@ -281,7 +279,7 @@ server <- function(input, output, session){
           ggplot(d, aes(x = lambdas, y = llik)) + 
             geom_line() + geom_point(aes(x = input$lambda,
                                        y = llpoisson.grad(input$lambda, n = input$timeP, y = input$observationP)$l),
-                                       colour = "blue")
+                                       colour = "blue") + xlab("lambda") + ylab("Log Likelihood")
           }
       }
       
