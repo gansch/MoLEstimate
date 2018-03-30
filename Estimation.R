@@ -178,8 +178,8 @@ ui <- fluidPage(
         lambdaVal,
         y,
         n,
-        learningRate
-        #convergence
+        learningRate,
+        convergence
         #uiOutput("iterSlider")
         #changeIter
         )
@@ -241,12 +241,12 @@ server <- function(input, output, session){
         llik <- llpoisson.grad(thetas, n = input$n, y = input$y)$l
         d <- data.frame(thetas = thetas, llik = llik)
         
-        df <- MaxPois(theta = input$theta, alpha = input$learning, 
+        df <- MaxPois(theta = input$lambda, alpha = input$learning, 
                       delta = input$conv, n = input$n, y = input$y)
         s <- input$iterhist_rows_selected
         
         newdf <- data.frame(cbind(df[s, 2],df[s, 3], df[s, 4]))
-        colnames(newdf)[1] <- "theta"
+        colnames(newdf)[1] <- "lambda"
         colnames(newdf)[2] <- "Loglikelihood"
 	colnames(newdf)[3] <- "FirstDeriv"
         
@@ -254,8 +254,8 @@ server <- function(input, output, session){
         
           ggplot(d, aes(x = thetas, y = llik)) + 
             geom_line() + 
-            geom_point(aes(x = input$theta,
-              y = llpoisson.grad(input$theta, n = input$n, y = input$y)$l),
+            geom_point(aes(x = input$lambda,
+              y = llpoisson.grad(input$lambda, n = input$n, y = input$y)$l),
               colour = "blue") +
             geom_point(data = newdf,
 	      mapping = aes(x = theta, y = Loglikelihood, colour = "red")) + 
@@ -266,8 +266,8 @@ server <- function(input, output, session){
         } else {
         
           ggplot(d, aes(x = thetas, y = llik)) + 
-            geom_line() + geom_point(aes(x = input$theta,
-                                       y = llpoisson.grad(input$theta, n = input$n, y = input$y)$l),
+            geom_line() + geom_point(aes(x = input$lambda,
+                                       y = llpoisson.grad(input$lambda, n = input$n, y = input$y)$l),
                                        colour = "blue")
 	}
       }
@@ -279,7 +279,7 @@ server <- function(input, output, session){
       MaxBinom(theta = input$theta, alpha = input$learning, 
                delta = input$conv, n = input$n, y = input$y)
       } else if (input$dist == "Poisson"){ # or poisson
-        MaxPois(theta = input$theta, alpha = input$learning,
+        MaxPois(theta = input$lambda, alpha = input$learning,
 	  delta = input$conv, n = input$n, y = input$y)
       }
     })
