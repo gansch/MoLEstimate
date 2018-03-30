@@ -196,9 +196,10 @@ server <- function(input, output, session){
                        delta = input$conv, n = input$n, y = input$y)
         s <- input$iterhist_rows_selected
         
-        newdf <- data.frame(cbind(df[s, 2],df[s, 3]))
+        newdf <- data.frame(cbind(df[s, 2],df[s, 3], df[s, 4]))
         colnames(newdf)[1] <- "theta"
         colnames(newdf)[2] <- "Loglikelihood"
+	colnames(newdf)[3] <- "FirstDeriv"
         
         if (length(s)){
         
@@ -207,7 +208,12 @@ server <- function(input, output, session){
             geom_point(aes(x = input$theta,
               y = llbinom.grad(input$theta, n = input$n, y = input$y)$l),
               colour = "blue") +
-            geom_point(data = newdf, mapping = aes(x = theta, y = Loglikelihood, colour = "red"))
+            geom_point(data = newdf, 
+	      mapping = aes(x = theta, y = Loglikelihood, colour = "red")) + 
+	    geom_segment(data = newdf,
+	      mapping = aes(x = theta - .1, xend = theta + .1,
+	         	    y = Loglikelihood - .1*FirstDeriv, yend = Loglikelihood + .1*FirstDeriv,
+			    colour = "red"))
         
         } else {
         
@@ -225,9 +231,10 @@ server <- function(input, output, session){
                       delta = input$conv, n = input$n, y = input$y)
         s <- input$iterhist_rows_selected
         
-        newdf <- data.frame(cbind(df[s, 2],df[s, 3]))
+        newdf <- data.frame(cbind(df[s, 2],df[s, 3], df[s, 4]))
         colnames(newdf)[1] <- "theta"
         colnames(newdf)[2] <- "Loglikelihood"
+	colnames(newdf)[3] <- "FirstDeriv"
         
         if (length(s)){
         
@@ -236,8 +243,12 @@ server <- function(input, output, session){
             geom_point(aes(x = input$theta,
               y = llpoisson.grad(input$theta, n = input$n, y = input$y)$l),
               colour = "blue") +
-            geom_point(data = newdf, mapping = aes(x = theta, y = Loglikelihood, colour = "red"))
-        
+            geom_point(data = newdf,
+	      mapping = aes(x = theta, y = Loglikelihood, colour = "red")) + 
+	    geom_segment(data = newdf,
+	      mapping = aes(x = theta - .1, xend = theta + .1,
+	         	    y = Loglikelihood - .1*FirstDeriv, yend = Loglikelihood + .1*FirstDeriv,
+			    colour = "red"))	     
         } else {
         
           ggplot(d, aes(x = thetas, y = llik)) + 
