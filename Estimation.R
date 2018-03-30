@@ -17,10 +17,10 @@ llbinom.grad <- function(theta, n, y){
 }
 
 # Function for Likelihood.. of Poisson distribution
-llpoisson.grad <- function(theta, n, y){
-  pell <- -n*(theta) + sum(y)*log(theta) # loglikelihood
-  pellp <- -n + sum(y)/theta # 1st derivative of llh
-  pellpp <- -1*(sum(y)/theta^2) # 2nd derivative of llh
+llpoisson.grad <- function(lambda, n, y){
+  pell <- -n*(lambda) + sum(y)*log(lambda) # loglikelihood
+  pellp <- -n + sum(y)/lambda # 1st derivative of llh
+  pellpp <- -1*(sum(y)/lambda^2) # 2nd derivative of llh
   out<-list(l=pell,lp=pellp, lpp=pellpp)
   return(out)
 }
@@ -84,7 +84,7 @@ MaxBinom <- function(theta, alpha, delta = 10^-6, n, y){
 # Function that searches for Maximum Likelihood: Iterative Method: POISSON
 MaxPois <- function(theta, alpha, delta = 10^-6, start = 1, n, y){
   if (20*alpha > theta) {
-    stop("You must enter a bigger value for the learning rate or a smaller theta")
+    stop("You must enter a bigger value for the learning rate or a smaller lambda")
   }
   # define empty vectors
   thetaVec <- NULL
@@ -96,7 +96,7 @@ MaxPois <- function(theta, alpha, delta = 10^-6, start = 1, n, y){
   thetaVec[1] <- theta
   
   # calculate likelihoods
-  out <- llpoisson.grad(theta = thetaVec[1], n = n, y = y)
+  out <- llpoisson.grad(lambda = thetaVec[1], n = n, y = y)
   
   # enter result of the list into the vectors
   LL[1] <- out$l
