@@ -1,7 +1,7 @@
 library(shiny)
 library(ggplot2)
-
-
+library(DT)
+library(plotly)
 ############################## Functions that we need later ####################################
 
 # Function for Likelihood of Binomial distribution
@@ -17,7 +17,7 @@ llbinom.grad <- function(theta, n, y){
 }
 
 # Function that searches for Maximum Likelihood: Iterative Method
-MaxBinom <- function(theta, alpha, delta = 10^-6, start = 1, n, y){
+MaxBinom <- function(theta, alpha, delta = 10^-6, n, y){
   if (20*alpha > theta) {
     stop("You must enter a bigger value for the learning rate or a smaller theta")
   }
@@ -73,51 +73,22 @@ MaxBinom <- function(theta, alpha, delta = 10^-6, start = 1, n, y){
 }
 
 
-Poislik <- function(n, lam, y){
-  # Likelihood
-  Lik <- exp(-n*lam)*lam^(sum(y))
-  
-  # Loglikelihood
-  #loglik <- log(exp(-n*lam)*theta^(sum(y)))
-  loglik <- -n*lam + sum(y) * log(lam)
-  #loglik <- log(exp(-n*lam)) + log(lam^(sum(y)))
-  
-  #First derivative of loglik 
-  loglik1 <- n + sum(y)/lam
-  
-  #Second derivative lof loglik
-  loglik2 <- -sum(y)*lam^(-2)
-  
-  #Plot
-  par(mfrow = c(2, 2))
-  plot(lam, Lik,type="l",xlab=expression(lam),ylab=expression(L(lam)))
-  plot(lam, loglik,type="l",xlab=expression(lam),ylab=expression(L(lam)), xlim = c(0, 6),
-       ylim = c(-25, 10))
-  plot(lam, loglik1,type="l",xlab=expression(lam),ylab=expression(L(lam)))
-  plot(lam, loglik2,type="l",xlab=expression(lam),ylab=expression(L(lam)), xlim = c(0, 6),
-       ylim = c(-25, 10))
-  par(mfrow = c(1, 1))
-}
-
-#Poislik(3, seq(0,6,.001), c(2, 2, 3))
-
 ################################### Choices and Buttons ##########################
+
 
 distribution <- selectInput(inputId = "dist", label = "Choose your distribution",
                             choices = c("Binomial", "Poisson"))
 thetaVal <- numericInput(inputId = "theta", label = "Choose your theta value", min = 0,
                          max = 0.99, step = 0.01, value = 0.5)
-n <- numericInput(inputId = "n", label = "Choose your n value", min = 1,
+n <- numericInput(inputId = "n", label = "Choose the number of Hits", min = 1,
                   max = 20, step = 1, value = 3)
-y <-numericInput(inputId = "y", label = "Choose your y value", min = 1,
+y <-numericInput(inputId = "y", label = "Choose the number of Misses", min = 1,
                  max = 20, step = 1, value = 1)
-startingVal <- numericInput(inputId = "starting", label = "Choose your starting value",
-                           min = 0.1, max = 1, step = 0.05, value = 0.5)
 learningRate <- numericInput(inputId = "learning", label = "Choose your learning rate",
-                            min = 0.005, max = 0.05, step = 0.001, value = 0.005)
-iterations <- sliderInput(inputId = "iter", label = "Iteration:", value = 1, min = 1, 
-                          max = 2, step= 1)
-changeIter <- actionButton(inputId = "change", label ="Change iteration max value")
+                             min = 0.005, max = 0.05, step = 0.001, value = 0.005)
+convergence <- numericInput(inputId = "conv", label = "Set the Convergence Level", value = 10^-16, min = 10^-20, 
+                            max = 10^-5, step= 10^-20)
+#changeIter <- actionButton(inputId = "change", label ="Change iteration max value")
 
 
 ####################### User Interface ###################################
@@ -130,17 +101,17 @@ ui <- fluidPage(
       thetaVal,
       y,
       n,
-      startingVal,
       learningRate,
-      iterations,
-      changeIter
+      convergence
+      #uiOutput("iterSlider")
+      #changeIter
       
     ),
     
     mainPanel(
-      plotOutput(outputId = "plot"),
-      dataTableOutput(outputId = "iterhistBinom")
-      #verbatimTextOutput(outputId = "iterhistBinom")
+      plotlyOutput(outputId = "plot"),
+      verbatimTextOutput(outputId = "selected"),
+      DTOutput(outputId = "iterhistBinom")
     )
   
   )
@@ -150,47 +121,58 @@ ui <- fluidPage(
 ###################### Server #################################
 server <- function(input, output, session){
     
-  # Table of iterations
-    output$iterhistBinom <- renderDataTable(
-      MaxBinom(theta = input$theta, alpha = input$learning, 
-               delta = 10^-16, start = input$starting, n = input$n, y = input$y)
-      
-    )
-
-    observeEvent(input$change, {
-      updateNumericInput(session, "iterations", value = 1, min = 1, max = nrow(output$iterhistBinom),
-                         step = 1)
-    })
-
   # Plots
-    output$plot <- renderPlot({
+    output$plot <- renderPlotly({
 
-      ## Binom Plot
-      plot(curve(llbinom.grad(x, n = input$n, y = input$y)$l, from = 0, to = 2*input$theta),
-           type = 'l', lwd = 2, xlab = "theta",
-           ylab = "log Likelihood", bty = "l")
-      points(input$theta, llbinom.grad(input$theta, n = input$n, y = input$y)$l,
-             col = "red", pch = 16)
-
-      # # Adding Tangent Line and vertical lines
-      # if (input$iter[2] != 0) {
-      #   segments(x0= iterhist$theta[input$iter[1]:input$iter[2]]-.3,
-      #            y0 = iterhist$ell[input$iter[1]:input$iter[2]]-.3*iterhist$ellp[input$iter[1]:input$iter[2]],
-      #            x1 = iterhist$theta[input$iter[1]:input$iter[2]]+.3,
-      #            y1 =iterhist$ell[input$iter[1]:input$iter[2]]+.3*iterhist$ellp[input$iter[1]:input$iter[2]],
-      #            col="red")
-      #   segments(x0= iterhist$theta[input$iter[1]:input$iter[2]], y0=-100, y1 = iterhist$ell[input$iter[1]:input$iter[2]],
-      #            col="green",
-      #            lty=2)
-      # }
+      thetas <- seq(.01, .99, by=.001)
+      llik <- llbinom.grad(thetas, n = input$n, y = input$y)$l
+      d <- data.frame(thetas = thetas, llik = llik)
+      
+      df <- MaxBinom(theta = input$theta, alpha = input$learning, 
+                     delta = input$conv, n = input$n, y = input$y)
+      s <- input$iterhistBinom_rows_selected
+      
+      newdf <- data.frame(cbind(df[s, 2],df[s, 3]))
+      colnames(newdf)[1] <- "theta"
+      colnames(newdf)[2] <- "Loglikelihood"
+      
+      if (length(s)){
+        
+        ggplot(d, aes(x = thetas, y = llik)) + 
+          geom_line() + 
+          geom_point(aes(x = input$theta,
+                         y = llbinom.grad(input$theta, n = input$n, y = input$y)$l),
+                     colour = "blue") +
+          geom_point(data = newdf, mapping = aes(x = theta, y = Loglikelihood, colour = "red"))
+        
+      } else {
+        
+        ggplot(d, aes(x = thetas, y = llik)) + 
+          geom_line() + geom_point(aes(x = input$theta,
+                                       y = llbinom.grad(input$theta, n = input$n, y = input$y)$l),
+                                   colour = "blue")
+      }
+      #qplot(x = thetas, y = llbinom.grad(thetas, n = input$n, y = input$y)$l, geom = 'line',
+      #      xlab = expression(theta), ylab = "log Likelihood") + 
+        #scale_x_continuous(limits = c(0, .99)) + 
+        #geom_point(aes(x = input$theta, y = llbinom.grad(input$theta, n = input$n, y = input$y)$l),
+        #           colour = "red")
 
     })
-
+      
+    # Table of iterations
+    output$iterhistBinom <- DT::renderDataTable(
+      MaxBinom(theta = input$theta, alpha = input$learning, 
+               delta = input$conv, n = input$n, y = input$y)
+    )
     
+    output$selected <- renderPrint({
+      s <- input$iterhistBinom_rows_selected
+      if(length(s)){
+        cat('These iterations were selected:\n\n')
+        cat(s, sep = ', ')      }
+    })
     
-
-    
-
   
 }
 
@@ -199,6 +181,6 @@ shinyApp(ui, server)
 
 
 
-
+  
 
 
