@@ -140,12 +140,14 @@ MaxPois <- function(theta, alpha, delta = 10^-6, start = 1, n, y){
 
 
 distribution <- selectInput(inputId = "dist", label = "Choose your distribution",
-                            choices = c("Binomial", "Poisson"))
+                            choices = c("Binomial", "Poisson"), selected = "Binomial")
 thetaVal <- numericInput(inputId = "theta", label = "Choose your theta value", min = 0,
                          max = 0.99, step = 0.01, value = 0.5)
-n <- numericInput(inputId = "n", label = "Choose the number of Hits", min = 1,
+lambdaVal <- numericInput(inputId = "lambda", label = "Choose your lambda value", min = 0,
+                         max = 0.99, step = 0.01, value = 0.5)
+n <- numericInput(inputId = "n", label = "Choose the number of Misses", min = 1,
                   max = 20, step = 1, value = 3)
-y <-numericInput(inputId = "y", label = "Choose the number of Misses", min = 1,
+y <-numericInput(inputId = "y", label = "Choose the number of Hits", min = 1,
                  max = 20, step = 1, value = 1)
 learningRate <- numericInput(inputId = "learning", label = "Choose your learning rate",
                              min = 0.005, max = 0.05, step = 0.001, value = 0.005)
@@ -161,14 +163,26 @@ ui <- fluidPage(
   sidebarLayout(
     sidebarPanel(
       distribution,
-      thetaVal,
-      y,
-      n,
-      learningRate,
-      convergence
-      #uiOutput("iterSlider")
-      #changeIter
-      
+      conditionalPanel(
+        condition = ("input.dist == 'Binomial'"),
+        thetaVal,
+        y,
+        n,
+        learningRate,
+        convergence
+        #uiOutput("iterSlider")
+        #changeIter
+        ),
+      conditionalPanel(
+        condition = ("input.dist == 'Poisson'"),
+        lambdaVal,
+        y,
+        n,
+        learningRate
+        #convergence
+        #uiOutput("iterSlider")
+        #changeIter
+        )
     ),
     
     mainPanel(
