@@ -138,12 +138,11 @@ MaxPois <- function(lambda, alpha, delta = 10^-6, start = 1, n, y){
 
 ################################### Choices and Buttons ##########################
 
+########## Bionominal
 
 distribution <- selectInput(inputId = "dist", label = "Choose your distribution",
                             choices = c("Binomial", "Poisson"), selected = "Binomial")
 thetaVal <- numericInput(inputId = "theta", label = "Choose your theta value", min = 0,
-                         max = 0.99, step = 0.01, value = 0.5)
-lambdaVal <- numericInput(inputId = "lambda", label = "Choose your lambda value", min = 0,
                          max = 0.99, step = 0.01, value = 0.5)
 n <- numericInput(inputId = "n", label = "Choose the number of Misses", min = 1,
                   max = 20, step = 1, value = 3)
@@ -154,6 +153,20 @@ learningRate <- numericInput(inputId = "learning", label = "Choose your learning
 convergence <- numericInput(inputId = "conv", label = "Set the Convergence Level", value = 10^-16, min = 10^-20, 
                             max = 10^-5, step= 10^-20)
 #changeIter <- actionButton(inputId = "change", label ="Change iteration max value")
+
+
+########## Poisson
+
+lambdaVal <- numericInput(inputId = "lambda", label = "Choose your lambda value", min = 0,
+                         max = 0.99, step = 0.01, value = 0.5)
+observationVal <-numericInput(inputId = "observationP", label = "Choose the sum of observations", min = 1,
+                 max = 20, step = 1, value = 1)
+timeVal <- numericInput(inputId = "timeP", label = "Choose time interval", min = 1,
+                  max = 20, step = 1, value = 3)
+convergencePois <- numericInput(inputId = "convP", label = "Set the Convergence Level", value = 10^-16, min = 10^-20, 
+                            max = 10^-5, step= 10^-20)
+learningRatePois <- numericInput(inputId = "learningP", label = "Choose your learning rate",
+                             min = 0.005, max = 0.05, step = 0.001, value = 0.005)
 
 
 ####################### User Interface ###################################
@@ -176,12 +189,10 @@ ui <- fluidPage(
       conditionalPanel(
         condition = ("input.dist == 'Poisson'"),
         lambdaVal,
-        y,
-        n,
-        learningRate,
-        convergence
-        #uiOutput("iterSlider")
-        #changeIter
+        observationVal,
+        timeVal,
+        learningRatePois,
+        convergencePois
         )
     ),
     
@@ -238,11 +249,11 @@ server <- function(input, output, session){
 	}
       } else if (input$dist == "Poisson"){ ## POISSON PLOT
 	lambdas <- seq(.01, .99, by=.001)
-        llik <- llpoisson.grad(lambdas, n = input$n, y = input$y)$l
+        llik <- llpoisson.grad(lambdas, n = input$timeP, y = input$observationP)$l
         d <- data.frame(lambdas = lambdas, llik = llik)
         
         df <- MaxPois(lambda = input$lambda, alpha = input$learning, 
-                      delta = input$conv, n = input$n, y = input$y)
+                      delta = input$convP, n = input$timeP, y = input$observationP)
         s <- input$iterhist_rows_selected
         
         newdf <- data.frame(cbind(df[s, 2],df[s, 3], df[s, 4]))
@@ -255,7 +266,7 @@ server <- function(input, output, session){
           ggplot(d, aes(x = lambdas, y = llik)) + 
             geom_line() + 
             geom_point(aes(x = input$lambda,
-              y = llpoisson.grad(input$lambda, n = input$n, y = input$y)$l),
+              y = llpoisson.grad(input$lambda, n = input$timeP, y = input$observationP)$l),
               colour = "blue") +
             geom_point(data = newdf,
 	      mapping = aes(x = lambda, y = Loglikelihood, colour = "red")) + 
@@ -267,7 +278,7 @@ server <- function(input, output, session){
         
           ggplot(d, aes(x = lambdas, y = llik)) + 
             geom_line() + geom_point(aes(x = input$lambda,
-                                       y = llpoisson.grad(input$lambda, n = input$n, y = input$y)$l),
+                                       y = llpoisson.grad(input$lambda, n = input$timeP, y = input$observationP)$l),
                                        colour = "blue")
 	}
       }
@@ -279,8 +290,8 @@ server <- function(input, output, session){
       MaxBinom(theta = input$theta, alpha = input$learning, 
                delta = input$conv, n = input$n, y = input$y)
       } else if (input$dist == "Poisson"){ # or poisson
-        MaxPois(lambda = input$lambda, alpha = input$learning,
-	  delta = input$conv, n = input$n, y = input$y)
+        MaxPois(lambda = input$lambda, alpha = input$learningP,
+	  delta = input$convP, n = input$timeP, y = input$observationP)
       }
     })
     
