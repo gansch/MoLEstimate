@@ -208,6 +208,10 @@ MaxCauchy <- function(lambda = 1, alpha = .005, delta = 10^-6, y ){
   #iterhistCauchy <- data.frame(Iterations = seq(from = 1, to = start), theta = thetaVec,
   #                           LogLikelihood = LL, FirstDerivative = LLp, SecondDerivative = LLpp)
   iterhistCauchy <- cbind(thetaVec,LL,LLp,LLpp)
+  
+  #iterhistCauchy <- data.frame(Iterations = seq(from = 1, to = start), thetaVec = thetaVec,
+   #                             LL = LL, LLp = LLp, LLpp= LLpp)
+ 
   #iterhistCauchy <- rbind(iterhistCauchy,interhistCauchy)
   return(iterhistCauchy)
 }
@@ -351,10 +355,11 @@ server <- function(input, output, session){
             geom_point(aes(x = input$theta,
                            y = llbinom.grad(input$theta, n = input$n, y = input$y)$l),
                        colour = "blue") +
-           # geom_point(data = newdf[nrow(newdf),], 
-            #             mapping = aes(x = theta, y = Loglikelihood, colour = "blue"), alpha=1) + 
             geom_point(data = newdf, 
                        mapping = aes(x = theta, y = Loglikelihood, colour = "red"), alpha=.3) + 
+	    geom_point(data = df,
+		       mapping = aes(x = theta[length(theta)], y = LogLikelihood[length(LogLikelihood)]),
+		       colour="gold") +
             geom_segment(data = newdf,
                          mapping = aes(x = theta - .1, xend = theta + .1,
                                        y = Loglikelihood - .1*FirstDeriv, yend = Loglikelihood + .1*FirstDeriv),
@@ -369,8 +374,11 @@ server <- function(input, output, session){
             geom_line(aes(y = llik)) + 
             geom_point(aes(x = input$theta,
                            y = llbinom.grad(input$theta, n = input$n, y = input$y)$l),
-                       colour = "blue")
-        }
+                       colour = "blue") +
+	    geom_point(data = df,
+		       mapping = aes(x = theta[length(theta)], y = LogLikelihood[length(LogLikelihood)]),
+		       colour="gold")
+	}
         # 1st derivative added
       } else {
         if (length(s)){
@@ -383,6 +391,9 @@ server <- function(input, output, session){
                        colour = "blue") +
             geom_point(data = newdf, 
                        mapping = aes(x = theta, y = Loglikelihood, colour = "red"), alpha=1) + 
+	    geom_point(data = df,
+		       mapping = aes(x = theta[length(theta)], y = LogLikelihood[length(LogLikelihood)]),
+		       colour="gold") +
             geom_segment(data = newdf,
                          mapping = aes(x = theta - .1, xend = theta + .1,
                                        y = Loglikelihood - .1*FirstDeriv, yend = Loglikelihood + .1*FirstDeriv),
@@ -398,7 +409,10 @@ server <- function(input, output, session){
             geom_line(aes(y = llikp), alpha = .6, linetype = "dotted") + 
             geom_point(aes(x = input$theta,
                            y = llbinom.grad(input$theta, n = input$n, y = input$y)$l),
-                       colour = "blue")
+                       colour = "blue") + 
+	    geom_point(data = df,
+		       mapping = aes(x = theta[length(theta)], y = LogLikelihood[length(LogLikelihood)]),
+		       colour="gold")
         }
       }
       # POISSON PLOT
@@ -428,6 +442,9 @@ server <- function(input, output, session){
                        colour = "blue") +
             geom_point(data = newdf, 
                        mapping = aes(x = lambda, y = Loglikelihood, colour = "red"), alpha=1) + 
+	    geom_point(data = df,
+		       mapping = aes(x = lambda[length(lambda)], y = LogLikelihood[length(LogLikelihood)]),
+		       colour="gold") +
             geom_segment(data = newdf,
                          mapping = aes(x = lambda - (input$observationP/10), xend = lambda + (input$observationP/10),
                                        y = Loglikelihood - (input$observationP/10)*FirstDeriv,
@@ -443,7 +460,10 @@ server <- function(input, output, session){
             geom_line(aes(y = llik)) + 
             geom_point(aes(x = input$lambda,
                            y = llpoisson.grad(input$lambda, n = input$timeP, y = input$observationP)$l),
-                       colour = "blue") 
+                       colour = "blue") +
+	    geom_point(data = df,
+		       mapping = aes(x = lambda[length(lambda)], y = LogLikelihood[length(LogLikelihood)]),
+		       colour="gold")
         }
         # 1st derivative added
       } else {
@@ -457,6 +477,9 @@ server <- function(input, output, session){
                        colour = "blue") +
             geom_point(data = newdf, 
                        mapping = aes(x = lambda, y = Loglikelihood, colour = "red"), alpha=1) + 
+	    geom_point(data = df,
+		       mapping = aes(x = lambda[length(lambda)], y = LogLikelihood[length(LogLikelihood)]),
+		       colour="gold") +			      
             geom_segment(data = newdf,
                          mapping = aes(x = lambda - .1, xend = lambda + (input$observationP/10),
                                        y = Loglikelihood - (input$observationP/10)*FirstDeriv,
@@ -473,11 +496,14 @@ server <- function(input, output, session){
             geom_line(aes(y = llikp), alpha = .6, linetype = "dotted") + 
             geom_point(aes(x = input$lambda,
                            y = llpoisson.grad(input$lambda, n = input$timeP, y = input$observationP)$l),
-                       colour = "blue")
+                       colour = "blue") + 
+	    geom_point(data = df,
+		       mapping = aes(x = lambda[length(lambda)], y = LogLikelihood[length(LogLikelihood)]),
+		       colour="gold")			      
         }
       }
       
-####Cauchy plot
+####CAUCHY PLOT
     } else {
         thetasc <- seq(-6, 6, by=.1)
         
@@ -508,9 +534,12 @@ server <- function(input, output, session){
                          colour = "blue") +
               geom_point(data = newdf, 
                          mapping = aes(x = thetac, y = Loglikelihood, colour = "red"), alpha=1) + 
+	     geom_point(data = as.data.frame(df),
+	 	       mapping = aes(x = thetaVec[length(thetaVec)], y = LL[length(LL)]),
+	 	       colour="gold") +		      
               geom_segment(data = newdf,
-                           mapping = aes(x = thetac - .1, xend = thetac + .1,
-                                         y = Loglikelihood - .1*FirstDeriv, yend = Loglikelihood + .1*FirstDeriv),
+                           mapping = aes(x = thetac - .6, xend = thetac + .6,
+                                         y = Loglikelihood - .6*FirstDeriv, yend = Loglikelihood + .6*FirstDeriv),
                            colour = "red") + 
               geom_segment(data = newdf,
                            mapping = aes(x = thetac, xend = thetac, y = min(llik_list[[1]]), yend = Loglikelihood),
@@ -522,7 +551,10 @@ server <- function(input, output, session){
               geom_line(aes(y = llik)) + 
               geom_point(aes(x = input$lambdac,
                              y = llcauchy.grad(input$lambdac, y = ran)$l),
-                         colour = "blue")
+                         colour = "blue") +
+	     geom_point(data = as.data.frame(df),
+	 	       mapping = aes(x = thetaVec[length(thetaVec)], y = LL[length(LL)]),
+	 	       colour="gold")			      
           }
           # 1st derivative added
         } else {
@@ -534,11 +566,14 @@ server <- function(input, output, session){
               geom_point(aes(x = input$lambdac,
                              y = llcauchy.grad(input$lambdac, y = ran)$l),
                          colour = "blue") +
+	     geom_point(data = as.data.frame(df),
+	 	       mapping = aes(x = thetaVec[length(thetaVec)], y = LL[length(LL)]),
+	 	       colour="gold") +
               geom_point(data = newdf, 
                          mapping = aes(x = thetac, y = Loglikelihood, colour = "red"), alpha=1) + 
               geom_segment(data = newdf,
-                           mapping = aes(x = thetac - .1, xend = thetac + .1,
-                                         y = Loglikelihood - .1*FirstDeriv, yend = Loglikelihood + .1*FirstDeriv),
+                           mapping = aes(x = thetac - .6, xend = thetac + .6,
+                                         y = Loglikelihood - .6*FirstDeriv, yend = Loglikelihood + .6*FirstDeriv),
                            colour = "red") + 
               geom_segment(data = newdf,
                            mapping = aes(x = thetac, xend = thetac, y = min(llik_list[[1]]), yend = Loglikelihood),
@@ -551,7 +586,10 @@ server <- function(input, output, session){
               geom_line(aes(y = llikp), alpha = .6, linetype = "dotted") + 
               geom_point(aes(x = input$lambdac,
                              y = llcauchy.grad(input$lambdac, y = ran)$l),
-                         colour = "blue")
+                         colour = "blue") +
+	     geom_point(data = as.data.frame(df),
+	 	       mapping = aes(x = thetaVec[length(thetaVec)], y = LL[length(LL)]),
+	 	       colour="gold")	      
           }
         }
     }
@@ -559,6 +597,7 @@ server <- function(input, output, session){
   
   # Table of iterations
   output$iterhist <- DT::renderDataTable({
+    ran <- c(-0.71,-0.53,3.27,5.64)
     if (input$dist == "Binomial"){ # if binomial selected
       MaxBinom(theta = input$theta, alpha = input$learning, 
                delta = (10^(input$conv)), n = input$n, y = input$y)
