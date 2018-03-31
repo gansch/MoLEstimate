@@ -45,7 +45,7 @@ llcauchy.grad <- function(theta, y){
 
 ######## Function that searches for Maximum Likelihood: Binom
 MaxBinom <- function(theta, alpha, delta = 10^-6, n, y){
-  if (10*alpha > theta) {
+  if (20*alpha > theta) {
     stop("You must enter a bigger value for the learning rate or a smaller theta")
   }
   # define empty vectors
@@ -100,7 +100,7 @@ MaxBinom <- function(theta, alpha, delta = 10^-6, n, y){
 
 ###### Function that searches for Maximum Likelihood: Iterative Method: POISSON
 MaxPois <- function(lambda, alpha, delta = 10^-6, n, y){
-  if (10*alpha > lambda) {
+  if (20*alpha > lambda) {
     stop("You must enter a bigger value for the learning rate or a smaller lambda")
   }
   # define empty vectors
@@ -218,8 +218,8 @@ MaxCauchy <- function(lambda = 1, alpha = .005, delta = 10^-6, y ){
 ########## Bionominal
 
 distribution <- selectInput(inputId = "dist", label = "Choose your distribution",
-                            choices = c("Binomial", "Poisson", "Cauchy"), selected = "Cauchy")
-thetaVal <- numericInput(inputId = "theta", label = "Choose your theta $\\theta$", min = 0,
+                            choices = c("Binomial", "Poisson", "Cauchy"), selected = "Binomial")
+thetaVal <- numericInput(inputId = "theta", label = "Choose your theta ($\\theta$)", min = 0,
                          max = 0.99, step = 0.01, value = 0.5)
 n <- numericInput(inputId = "n", label = "Choose the number of Misses", min = 1,
                   max = 20, step = 1, value = 3)
@@ -227,33 +227,33 @@ y <-numericInput(inputId = "y", label = "Choose the number of Hits", min = 1,
                  max = 20, step = 1, value = 1)
 learningRate <- numericInput(inputId = "learning", label = "Choose your learning rate",
                              min = 0.0005, max = 0.2, step = 0.001, value = 0.015)
-convergence <- numericInput(inputId = "conv", label = "Set the Convergence Level", value = 10^-16, min = 10^-20, 
-                            max = 10^-5, step= 10^-20)
-deriv <- checkboxInput("deriv", label="Check box to add curve of the 1st derivative",
+convergence <- sliderInput(inputId = "conv", label = "Set the exponent of the convergence level (1*10^-x)", value = -6, min = -15, 
+                                                        max = -2, step= 1)
+deriv <- checkboxInput("deriv", label="Check box to display curve of the 1st derivative",
                        value=FALSE)
 
 ########## Poisson
 
-lambdaVal <- numericInput(inputId = "lambda", label = "Choose your lambda $\\lambda$", min = 0,
+lambdaVal <- numericInput(inputId = "lambda", label = "Choose your lambda ($\\lambda$)", min = 0,
                           max = 0.99, step = 0.01, value = 0.5)
-observationVal <-numericInput(inputId = "observationP", label = "Choose the sum of observations $k$", min = 1,
+observationVal <-numericInput(inputId = "observationP", label = "Choose the sum of observations ($k$)", min = 1,
                               max = 20, step = 1, value = 1)
 timeVal <- numericInput(inputId = "timeP", label = "Choose numbers of time interval", min = 1,
                         max = 20, step = 1, value = 3)
-convergencePois <- numericInput(inputId = "convP", label = "Set the Convergence Level", value = 10^-16,
-                                min = 10^-20, max = 10^-5, step= 10^-20)
+convergencePois <- sliderInput(inputId = "convP", label = "Set the exponent of the convergence level (1*10^-x)", value = -6,
+                               			       	min = -15, max = -2, step= 1)
 learningRatePois <- numericInput(inputId = "learningP", label = "Choose your learning rate",
                                  min = 0.005, max = 0.5, step = 0.001, value = 0.015)
-derivPois <- checkboxInput("derivP", label="Check box to add curve of the 1st derivative",
+derivPois <- checkboxInput("derivP", label="Check box to display curve of the 1st derivative",
                            value=FALSE)
 
 #### cauchy
 
-lambdaValC <- numericInput(inputId = "lambdac", label = "Choose your lambda $\\lambda$", min = -6,
+lambdaValC <- numericInput(inputId = "lambdac", label = "Choose your lambda ($\\lambda$)", min = -6,
                           max = 6, step = 0.5, value = 1)
 
-convergenceC <- numericInput(inputId = "convc", label = "Set the Convergence Level", value = 10^-16, min = 10^-20, 
-                            max = 10^-5, step= 10^-2)
+convergenceC <- sliderInput(inputId = "convc", label = "Set the exponent of the convergence level (1*10^-x)", value = -6, min = -15, 
+                            max = -2, step= 1)
 derivC <- checkboxInput("derivc", label="Check box to add curve of the 1st derivative",
                        value=FALSE)
 
@@ -278,9 +278,9 @@ ui <- fluidPage(
       conditionalPanel(
         condition = ("input.dist == 'Binomial'"),
         withMathJax(helpText("$x$ ~ $B(n, \\theta)$")),
-        withMathJax(thetaVal),
         y,
         n,
+        withMathJax(thetaVal),
         learningRate,
         convergence,
         deriv
@@ -290,9 +290,9 @@ ui <- fluidPage(
       conditionalPanel(
         condition = ("input.dist == 'Poisson'"),
         helpText("$x$ ~ $Po(\\lambda)$"),
-        withMathJax(lambdaVal),
         observationVal,
         timeVal,
+        withMathJax(lambdaVal),
         learningRatePois,
         convergencePois,
         derivPois
@@ -335,7 +335,7 @@ server <- function(input, output, session){
                       llikp = llik_list[[2]])
       
       df <- MaxBinom(theta = input$theta, alpha = input$learning, 
-                     delta = input$conv, n = input$n, y = input$y)
+                     delta = (10^(input$conv)), n = input$n, y = input$y)
       s <- input$iterhist_rows_selected
       
       newdf <- data.frame(cbind(df[s, 2], df[s, 3], df[s, 4]))
@@ -351,8 +351,10 @@ server <- function(input, output, session){
             geom_point(aes(x = input$theta,
                            y = llbinom.grad(input$theta, n = input$n, y = input$y)$l),
                        colour = "blue") +
+           # geom_point(data = newdf[nrow(newdf),], 
+            #             mapping = aes(x = theta, y = Loglikelihood, colour = "blue"), alpha=1) + 
             geom_point(data = newdf, 
-                       mapping = aes(x = theta, y = Loglikelihood, colour = "red"), alpha=1) + 
+                       mapping = aes(x = theta, y = Loglikelihood, colour = "red"), alpha=.3) + 
             geom_segment(data = newdf,
                          mapping = aes(x = theta - .1, xend = theta + .1,
                                        y = Loglikelihood - .1*FirstDeriv, yend = Loglikelihood + .1*FirstDeriv),
@@ -408,7 +410,7 @@ server <- function(input, output, session){
                       llikp = llik_list[[2]])
       
       df <- MaxPois(lambda = input$lambda, alpha = input$learningP, 
-                    delta = input$convP, n = input$timeP, y = input$observationP)
+                    delta = (10^(input$convP)), n = input$timeP, y = input$observationP)
       s <- input$iterhist_rows_selected
       
       newdf <- data.frame(cbind(df[s, 2], df[s, 3], df[s, 4]))
@@ -488,7 +490,7 @@ server <- function(input, output, session){
                         llikp = llik_list[[2]])
         
         df <- MaxCauchy(lambda = input$lambdac, alpha = input$learningc, 
-                       delta = input$convc, y = ran)
+                       delta = (10^(input$convc)), y = ran)
         s <- input$iterhist_rows_selected
         
         newdf <- data.frame(cbind(df[s, 1], df[s, 2], df[s, 3]))
@@ -559,13 +561,13 @@ server <- function(input, output, session){
   output$iterhist <- DT::renderDataTable({
     if (input$dist == "Binomial"){ # if binomial selected
       MaxBinom(theta = input$theta, alpha = input$learning, 
-               delta = input$conv, n = input$n, y = input$y)
+               delta = (10^(input$conv)), n = input$n, y = input$y)
     } else if (input$dist == "Poisson"){ # or poisson
       MaxPois(lambda = input$lambda, alpha = input$learningP,
-              delta = input$convP, n = input$timeP, y = input$observationP)
+              delta = (10^(input$convP)), n = input$timeP, y = input$observationP)
     } else {
       MaxCauchy(lambda = input$lambdac, alpha = input$learningc,
-                delta = input$convc, y = ran)
+                delta = (10^(input$convc)), y = ran)
     }
   })
   
